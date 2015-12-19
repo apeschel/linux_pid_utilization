@@ -4,6 +4,8 @@
 #
 # Copyright (c) 2015 Aaron Peschel
 
+# This class encapsulates the logic and data required to produce the
+# utilization information about a process.
 class ProcessStats
   # @etime - Number of seconds that this process has been in the kernel's
   #   process list
@@ -21,7 +23,7 @@ class ProcessStats
   end
 
   # result is in seconds
-  def seconds_since_boot()
+  def seconds_since_boot
     Float(IO.read('/proc/uptime').split[0])
   end
 
