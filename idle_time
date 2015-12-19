@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+
+# The MIT License (MIT)
+#
+# Copyright (c) 2015 Aaron Peschel
+
+class ProcessStats
+  # @etime - Number of seconds that this process has been in the kernel's
+  #   process list
+  # @runtime - Number of seconds this process has been in the run (R) state
+  # @idletime - Number of seconds this process has been in the sleep (S) state
+  # @utilization - The overall CPU load of the Process
+  attr_accessor :etime, :runtime, :idletime, :utilization
+
+  # This gets the HZ value of the kernel jiffies.
+  # It is used to convert from jiffies to seconds.
+  @@clk_tck ||= Integer(`getconf CLK_TCK`)
+
+  def initialize(pid)
+    update_proc_info(pid)
+  end
+
+  # result is in seconds
+  def seconds_since_boot()
+    Float(IO.read('/proc/uptime').split[0])
+  end
+
+  # starttime is in jiffies
+  # result is in seconds
+  def calculate_etime(starttime)
+    seconds_since_boot - (starttime / @@clk_tck)
+  end
+
+  # utime is in jiffies
+  # stime is in jiffies
+  # result is in seconds
+  def calculate_runtime(utime, stime)
+    (utime + stime) / @@clk_tck
+  end
+
+  # utime - Number of user space jiffies used by this process
+  # stime - Number of kernel space jiffies used by this process
+  # starttime - Number of jiffies since boot to when this process started
+  def update_proc_info(pid)
+    result = IO.read("/proc/#{pid}/stat").split
+    utime = Integer(result[13])
+    stime = Integer(result[14])
+    starttime = Integer(result[21])
+    @etime = calculate_etime(starttime)
+    @runtime = calculate_runtime(utime, stime)
+    @idletime = @etime - @runtime
+    @utilization = @runtime / @etime
+  end
+
+  def stats_string
+    "#{@etime.round}, #{@runtime}, #{@idletime}, #{@utilization}"
+  end
+end
+
+ARGV.each do |pid|
+  p = ProcessStats.new(pid)
+  puts p.stats_string
+end
