@@ -12,13 +12,14 @@ class ProcessStats
   # @runtime - Number of seconds this process has been in the run (R) state
   # @idletime - Number of seconds this process has been in the sleep (S) state
   # @utilization - The overall CPU load of the Process
-  attr_accessor :etime, :runtime, :idletime, :utilization
+  attr_accessor :pid, :etime, :runtime, :idletime, :utilization
 
   # This gets the HZ value of the kernel jiffies.
   # It is used to convert from jiffies to seconds.
   @@clk_tck ||= Integer(`getconf CLK_TCK`)
 
   def initialize(pid)
+    @pid = pid
     update_proc_info(pid)
   end
 
@@ -55,7 +56,7 @@ class ProcessStats
   end
 
   def stats_string
-    "#{@etime.round}, #{@runtime}, #{@idletime}, #{@utilization}"
+    "#{@pid} #{@etime.round} #{@runtime} #{@idletime.round} #{@utilization}"
   end
 end
 
