@@ -45,22 +45,30 @@ class ProcessStats
   # stime - Number of kernel space jiffies used by this process
   # starttime - Number of jiffies since boot to when this process started
   def update_proc_info(pid)
-    result = IO.read("/proc/#{pid}/stat").split
-    utime = Integer(result[13])
-    stime = Integer(result[14])
-    starttime = Integer(result[21])
-    @etime = calculate_etime(starttime)
-    @runtime = calculate_runtime(utime, stime)
-    @idletime = @etime - @runtime
-    @utilization = @runtime / @etime
+    begin
+      result = IO.read("/proc/#{pid}/stat").split
+      utime = Integer(result[13])
+      stime = Integer(result[14])
+      starttime = Integer(result[21])
+      @etime = calculate_etime(starttime)
+      @runtime = calculate_runtime(utime, stime)
+      @idletime = @etime - @runtime
+      @utilization = @runtime / @etime
+    rescue Errno::ENOENT
+      raise ArgumentError.new('#{pid} has died')
+    end
   end
 
   def stats_string
-    "#{@pid} #{@etime.round} #{@runtime} #{@idletime.round} #{@utilization}"
+    "#{@pid} #{@etime.round} #{@runtime} #{@idletime.round} #{@utilization.round(4)}"
   end
 end
 
 ARGV.each do |pid|
-  p = ProcessStats.new(pid)
-  puts p.stats_string
+  begin
+    p = ProcessStats.new(pid)
+    puts p.stats_string
+  rescue ArgumentError
+    next
+  end
 end
